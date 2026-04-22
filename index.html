@@ -3,454 +3,418 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Caixa Diário — Valor Gestão</title>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+<title>Feirão de Empregos — Super Royal</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
-:root{
-  --azul:#1B3A5C;--ciano:#3A9BB5;--azul-l:#EBF3FA;--cinza-f:#F4F6F9;
-  --cinza-t:#2C2C2C;--cinza-m:#6B6B6B;--cinza-l:#D8DDE5;
-  --verde:#1A5C38;--verde-l:#EAF4EA;--laranja:#C05000;--laranja-l:#FFF0E8;
-  --vermelho:#C0392B;--vermelho-l:#FDEDEC;
+:root{--navy:#0a1628;--blue:#1a3a6b;--gold:#f5b800;--white:#fff;--light:#f0f4fa;--muted:#8fa3c0;--success:#2ecc71;--border:#c8d8ef;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--navy);min-height:100vh;color:var(--white);}
+
+.hdr{background:linear-gradient(160deg,#0d1f42,#1a3a6b);padding:28px 20px 22px;text-align:center;}
+.badge{display:inline-block;background:var(--gold);color:var(--navy);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:12px;}
+.hdr h1{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;text-transform:uppercase;line-height:1.1;}
+.hdr h1 span{color:var(--gold);}
+.hdr p{color:var(--muted);font-size:13px;margin-top:6px;}
+
+.steps{display:flex;justify-content:center;padding:18px 20px 0;background:var(--blue);}
+.step{flex:1;max-width:90px;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;}
+.step:not(:last-child)::after{content:'';position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:rgba(255,255,255,.15);}
+.step.done:not(:last-child)::after,.step.active:not(:last-child)::after{background:var(--gold);}
+.dot{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--muted);z-index:1;}
+.step.active .dot{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+.step.done .dot{background:var(--success);border-color:var(--success);color:#fff;font-size:14px;}
+.slabel{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.2;}
+.step.active .slabel{color:var(--gold);}
+.step.done .slabel{color:var(--success);}
+
+.card{background:#fff;color:var(--navy);margin:20px 16px 0;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.35);}
+.card+.card{margin-top:12px;}
+.ctitle{background:var(--light);padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--blue);border-bottom:1px solid var(--border);}
+.cbody{padding:20px;}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.full{grid-column:1/-1;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg lbl{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);display:block;margin-bottom:2px;}
+.req{color:#e74c3c;}
+input,select,textarea{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--navy);background:#fff;outline:none;width:100%;transition:border-color .2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);}
+textarea{resize:vertical;min-height:80px;}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%231a3a6b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.ierr{border-color:#e74c3c!important;}
+
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.opt{
+  display:block;
+  padding:11px 16px;
+  border-radius:8px;
+  border:1.5px solid var(--border);
+  background:var(--light);
+  color:var(--navy);
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .12s,border-color .12s,color .12s;
 }
-body{background:#f0f4f8;color:var(--cinza-t);font-size:13px;min-height:100vh}
-.app{max-width:680px;margin:0 auto;padding:12px}
+.opt.sel{background:#ddeaff;border-color:var(--blue);color:var(--blue);font-weight:600;}
 
-/* HEADER */
-.header{background:var(--azul);color:#fff;padding:12px 16px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:13px;font-weight:700}
-.header .user{font-size:11px;color:#aac}
-.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;transition:.15s}
-.logout-btn:hover{background:rgba(255,255,255,.25)}
+.filho-row{display:flex;align-items:center;gap:10px;background:var(--light);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.filho-row input{flex:1;}
+.btn-rm{background:none;border:none;cursor:pointer;color:#e74c3c;font-size:22px;line-height:1;padding:0 2px;}
+.btn-add{display:flex;align-items:center;justify-content:center;width:100%;background:none;border:1.5px dashed var(--border);border-radius:8px;padding:11px;color:var(--blue);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
 
-/* LOGIN */
-.login-panel{background:#fff;border-radius:8px;padding:24px;border:1px solid var(--cinza-l);max-width:400px;margin:40px auto}
-.login-panel h2{font-size:16px;color:var(--azul);margin-bottom:16px;text-align:center}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:11px;font-weight:700;color:var(--cinza-m);margin-bottom:4px;text-transform:uppercase}
-.field input{width:100%;padding:8px 10px;border:1px solid var(--cinza-l);border-radius:5px;font-size:13px}
-.field input:focus{outline:none;border-color:var(--ciano)}
-.btn-login{width:100%;padding:10px;background:var(--azul);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px}
-.btn-login:hover{background:#2B5A8A}
-.error-msg{background:var(--vermelho-l);color:var(--vermelho);padding:8px 12px;border-radius:5px;margin-bottom:12px;font-size:11.5px}
+.nav{display:flex;gap:10px;padding:16px 16px 28px;}
+.btn-back{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;padding:14px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;cursor:pointer;}
+.btn-next{flex:1;background:var(--gold);border:none;border-radius:10px;padding:14px;color:var(--navy);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 16px rgba(245,184,0,.4);}
 
-/* TABS */
-.tabs{display:flex;gap:2px;background:var(--azul);padding:0 8px;margin-bottom:0}
-.tab{padding:8px 12px;cursor:pointer;font-size:11.5px;font-weight:700;color:#aac;border-radius:6px 6px 0 0;white-space:nowrap;transition:.15s}
-.tab.active{background:#fff;color:var(--azul)}
+.swrap{text-align:center;padding:40px 24px 32px;}
+.sicon{width:72px;height:72px;background:var(--success);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:34px;}
+.swrap h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;text-transform:uppercase;margin-bottom:8px;}
+.swrap p{font-size:14px;color:var(--muted);}
+.resumo{background:var(--light);border-radius:10px;padding:14px 16px;margin-top:20px;text-align:left;}
+.rrow{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);color:var(--navy);}
+.rrow:last-child{border:none;}
+.rrow span:first-child{color:var(--blue);font-weight:600;}
 
-/* PAINEL */
-.panel{display:none;background:#fff;border-radius:0 8px 8px 8px;padding:16px;border:1px solid var(--cinza-l)}
-.panel.active{display:block}
-
-.sec-title{font-size:12px;font-weight:700;color:var(--azul);border-bottom:2px solid var(--ciano);padding-bottom:4px;margin-bottom:10px}
-
-/* FORMULÁRIO DE LANÇAMENTO */
-.lancamento-form{background:var(--cinza-f);border-radius:8px;padding:12px;margin-bottom:12px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
-.field{display:flex;flex-direction:column;gap:3px}
-.field label{font-size:10px;font-weight:700;color:var(--cinza-m);text-transform:uppercase;letter-spacing:.3px}
-.field input,.field select{padding:6px 8px;border:1px solid var(--cinza-l);border-radius:5px;font-size:12px;color:var(--cinza-t)}
-.field input:focus,.field select:focus{outline:none;border-color:var(--ciano)}
-.btn-lancar{background:var(--azul);color:#fff;padding:8px 14px;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer}
-.btn-lancar:hover{background:#2B5A8A}
-
-/* KPI */
-.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.kpi{border-radius:6px;padding:10px 12px;text-align:center;border:1px solid var(--cinza-l)}
-.kpi .val{font-size:16px;font-weight:700;line-height:1.2}
-.kpi .lbl{font-size:10px;color:var(--cinza-m);margin-top:2px;text-transform:uppercase}
-.kpi.vd{background:var(--verde-l);border-color:#a8d5b8}.kpi.vd .val{color:var(--verde)}
-.kpi.vm{background:var(--vermelho-l);border-color:#f0a8a8}.kpi.vm .val{color:var(--vermelho)}
-.kpi.az{background:var(--azul-l);border-color:#a8c8e8}.kpi.az .val{color:var(--azul)}
-
-/* LANÇAMENTOS */
-.lancamentos-list{max-height:400px;overflow-y:auto}
-.lancamento-item{background:#fff;border:1px solid var(--cinza-l);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-.lancamento-info{flex:1}
-.lancamento-info .tipo{font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.3px}
-.lancamento-info .desc{font-size:12px;color:var(--cinza-t);margin:2px 0}
-.lancamento-info .cat{font-size:10px;color:var(--cinza-m)}
-.lancamento-valor{text-align:right}
-.lancamento-valor .valor{font-size:13px;font-weight:700}
-.lancamento-valor .data{font-size:10px;color:var(--cinza-m)}
-.entrada .valor{color:var(--verde)}
-.saida .valor{color:var(--vermelho)}
-.btn-del{background:var(--vermelho-l);color:var(--vermelho);border:none;border-radius:3px;padding:2px 6px;font-size:10px;cursor:pointer;margin-top:2px}
-
-.empty{text-align:center;padding:20px;color:var(--cinza-m);font-size:12px}
+.hidden{display:none!important;}
+@media(max-width:360px){.grid{grid-template-columns:1fr;}.full{grid-column:1;}}
 </style>
 </head>
 <body>
-<div class="app">
 
-<!-- LOGIN -->
-<div id="login-container" class="login-panel">
-  <h2>Caixa Diário — Valor</h2>
-  <div id="error-msg"></div>
-  <div class="field">
-    <label>Email</label>
-    <input type="email" id="email" placeholder="seu@email.com">
-  </div>
-  <div class="field">
-    <label>Senha</label>
-    <input type="password" id="senha" placeholder="****">
-  </div>
-  <button class="btn-login" onclick="fazerLogin()">Entrar</button>
-  <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--cinza-m)">
-    Primeira vez? <a href="#" onclick="abrirCadastro();return false" style="color:var(--ciano);text-decoration:none">Cadastre-se aqui</a>
-  </div>
+<div class="hdr">
+  <div class="badge">Super Royal Matriz</div>
+  <h1>Feirão de<br><span>Empregos</span></h1>
+  <p>Segunda-feira, 13/04 · 09h · Chapecó - SC</p>
 </div>
 
-<!-- APP PRINCIPAL -->
-<div id="app-container" style="display:none">
-
-<div class="header">
-  <h1>💰 Caixa Diário</h1>
-  <div style="text-align:right">
-    <div class="user" id="cliente-nome">Studio Casa d'Rara</div>
-    <button class="logout-btn" onclick="fazerLogout()">Sair</button>
-  </div>
+<div class="steps" id="steps">
+  <div class="step active" id="s1"><div class="dot" id="d1">1</div><div class="slabel">Dados<br>Pessoais</div></div>
+  <div class="step" id="s2"><div class="dot" id="d2">2</div><div class="slabel">Família &<br>Moradia</div></div>
+  <div class="step" id="s3"><div class="dot" id="d3">3</div><div class="slabel">Vaga &<br>Info</div></div>
 </div>
 
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('lancamentos')">📊 Lançamentos</div>
-  <div class="tab" onclick="switchTab('resumo')">📈 Resumo</div>
-</div>
-
-<!-- LANÇAMENTOS -->
-<div id="tab-lancamentos" class="panel active">
-  <div class="sec-title">Novo Lançamento</div>
-  <div class="lancamento-form">
-    <div class="g2">
-      <div class="field">
-        <label>Tipo</label>
-        <select id="tipo-lanc">
-          <option value="entrada">📍 Entrada</option>
-          <option value="saida">📍 Saída</option>
-        </select>
+<!-- STEP 1 -->
+<div id="p1">
+  <div class="card">
+    <div class="ctitle">Dados Pessoais</div>
+    <div class="cbody">
+      <div class="grid">
+        <div class="fg full">
+          <lbl>Nome completo <span class="req">*</span></lbl>
+          <input type="text" id="nome" placeholder="Seu nome completo">
+        </div>
+        <div class="fg">
+          <lbl>CPF</lbl>
+          <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14">
+        </div>
+        <div class="fg">
+          <lbl>Nascimento</lbl>
+          <input type="date" id="nasc">
+        </div>
+        <div class="fg">
+          <lbl>E-mail</lbl>
+          <input type="email" id="email" placeholder="seu@email.com">
+        </div>
+        <div class="fg">
+          <lbl>WhatsApp <span class="req">*</span></lbl>
+          <input type="tel" id="tel" placeholder="(49) 9 9999-9999" maxlength="16">
+        </div>
+        <div class="fg full">
+          <lbl>Cargo atual / Último cargo</lbl>
+          <input type="text" id="cargo" placeholder="Ex.: Repositor, Caixa…">
+        </div>
+        <div class="fg">
+          <lbl>Loja de interesse</lbl>
+          <select id="loja">
+            <option value="">Selecione</option>
+            <option>Pres. Médici</option>
+            <option>Universitário</option>
+            <option>Sem preferência</option>
+          </select>
+        </div>
+        <div class="fg">
+          <lbl>Setor</lbl>
+          <select id="setor">
+            <option value="">Selecione</option>
+            <option>Caixas</option>
+            <option>Repositores</option>
+            <option>Padaria</option>
+            <option>Limpeza</option>
+            <option>Conferência</option>
+            <option>Indiferente</option>
+          </select>
+        </div>
       </div>
-      <div class="field">
-        <label>Valor (R$)</label>
-        <input type="number" id="valor-lanc" placeholder="0.00" step="0.01">
+    </div>
+  </div>
+  <div class="nav"><button class="btn-next" id="btn1">Próximo →</button></div>
+</div>
+
+<!-- STEP 2 -->
+<div id="p2" class="hidden">
+  <div class="card">
+    <div class="ctitle">Família</div>
+    <div class="cbody">
+      <lbl>Tem filhos? <span class="req">*</span></lbl>
+      <div class="opts" id="g-filhos">
+        <div class="opt" id="f-sim">Sim</div>
+        <div class="opt" id="f-nao">Não</div>
+      </div>
+      <div id="sec-filhos" class="hidden" style="margin-top:14px;">
+        <lbl style="display:block;margin-bottom:6px;">Idade dos filhos</lbl>
+        <div id="filhos-list"></div>
+        <button class="btn-add" id="btn-add-filho">+ Adicionar filho</button>
       </div>
     </div>
-    <div class="field">
-      <label>Categoria</label>
-      <select id="categoria-lanc">
-        <option value="faturamento">Faturamento / Vendas</option>
-        <option value="cartao">Cartão a Receber</option>
-        <option value="insumos">Insumos / Produtos</option>
-        <option value="comissao">Comissões / Folha</option>
-        <option value="aluguel">Aluguel</option>
-        <option value="energia">Energia / Água</option>
-        <option value="fornecedor">Fornecedor</option>
-        <option value="imposto">Impostos</option>
-        <option value="outro">Outro</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Descrição (opcional)</label>
-      <input type="text" id="desc-lanc" placeholder="Ex: Coloração Ana Paula">
-    </div>
-    <button class="btn-lancar" onclick="lancarMovimento()">✓ Lançar</button>
   </div>
-
-  <div class="sec-title">Lançamentos de Hoje</div>
-  <div class="lancamentos-list" id="lista-lancamentos">
-    <div class="empty">Nenhum lançamento ainda</div>
+  <div class="card">
+    <div class="ctitle">Moradia</div>
+    <div class="cbody">
+      <lbl>Situação de moradia <span class="req">*</span></lbl>
+      <div class="opts" id="g-moradia">
+        <div class="opt">Casa própria</div>
+        <div class="opt">Aluguel</div>
+        <div class="opt">Com familiar</div>
+        <div class="opt">Outro</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="btn-back" id="btn2b">← Voltar</button>
+    <button class="btn-next" id="btn2">Próximo →</button>
   </div>
 </div>
 
-<!-- RESUMO -->
-<div id="tab-resumo" class="panel">
-  <div class="sec-title">Resumo do Mês</div>
-  <div class="kgrid">
-    <div class="kpi vd">
-      <div class="val" id="total-entrada">R$ 0</div>
-      <div class="lbl">Entradas</div>
-    </div>
-    <div class="kpi vm">
-      <div class="val" id="total-saida">R$ 0</div>
-      <div class="lbl">Saídas</div>
-    </div>
-    <div class="kpi az">
-      <div class="val" id="saldo-final">R$ 0</div>
-      <div class="lbl">Saldo</div>
+<!-- STEP 3 -->
+<div id="p3" class="hidden">
+  <div class="card">
+    <div class="ctitle">Vaga Pretendida</div>
+    <div class="cbody">
+      <div style="margin-bottom:16px;">
+        <lbl>Qual vaga você tem interesse? <span class="req">*</span></lbl>
+        <div class="opts" id="g-vagas">
+          <div class="opt">Caixa</div>
+          <div class="opt">Repositor</div>
+          <div class="opt">Aux Limpeza</div>
+          <div class="opt">Atend. Padaria</div>
+          <div class="opt">Conferente</div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <lbl>Disponibilidade de horário</lbl>
+        <div class="opts" id="g-horario">
+          <div class="opt">Manhã</div>
+          <div class="opt">Tarde</div>
+          <div class="opt">Noite</div>
+          <div class="opt">Integral</div>
+        </div>
+      </div>
+      <div>
+        <lbl>Informações adicionais</lbl>
+        <textarea id="obs" placeholder="Experiências, cursos, ou qualquer informação relevante…"></textarea>
+      </div>
     </div>
   </div>
-
-  <div class="sec-title">Entradas por Categoria</div>
-  <div id="entradas-cat" style="margin-bottom:16px"></div>
-
-  <div class="sec-title">Saídas por Categoria</div>
-  <div id="saidas-cat"></div>
+  <div class="nav">
+    <button class="btn-back" id="btn3b">← Voltar</button>
+    <button class="btn-next" id="btn3">Cadastrar ✓</button>
+  </div>
 </div>
 
-</div><!-- /app-container -->
-
-</div><!-- /app -->
+<!-- SUCCESS -->
+<div id="psuccess" class="hidden">
+  <div class="card">
+    <div class="swrap">
+      <div class="sicon">✓</div>
+      <h2>Cadastro realizado!</h2>
+      <p>Seus dados foram registrados.<br>Apresente-se com seu currículo.</p>
+      <div class="resumo" id="resumo"></div>
+    </div>
+  </div>
+  <div class="nav"><button class="btn-next" id="btn-novo">Novo cadastro</button></div>
+</div>
 
 <script>
-// ════════ FIREBASE CONFIG ════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyD...",
-  authDomain: "appsdevalor-financeiro.firebaseapp.com",
-  projectId: "appsdevalor-financeiro",
-  storageBucket: "appsdevalor-financeiro.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef..."
-};
+(function() {
+  var filhoN = 0;
+  var selFilhos = null;   // 'sim' ou 'nao'
+  var selMoradia = null;  // texto da opção
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+  // ── helpers de show/hide ──
+  function show(id) { document.getElementById(id).classList.remove('hidden'); }
+  function hide(id) { document.getElementById(id).classList.add('hidden'); }
 
-let usuarioAtual = null;
-let clienteId = null;
-
-// ════════ ESTADO ════════════════════════════════════════════
-let lancamentosHoje = [];
-
-// ════════ AUTH ════════════════════════════════════════════
-function fazerLogin(){
-  const email = document.getElementById('email').value;
-  const senha = document.getElementById('senha').value;
-  
-  if(!email || !senha){
-    mostrarErro('Preencha email e senha');
-    return;
+  // ── steps ──
+  function goTo(n) {
+    hide('p1'); hide('p2'); hide('p3'); hide('psuccess');
+    show('p' + n);
+    for (var i = 1; i <= 3; i++) {
+      var s = document.getElementById('s' + i);
+      var d = document.getElementById('d' + i);
+      s.classList.remove('active', 'done');
+      if (i === n)      { s.classList.add('active'); d.textContent = i; }
+      else if (i < n)   { s.classList.add('done');   d.textContent = '✓'; }
+      else              { d.textContent = i; }
+    }
+    window.scrollTo(0, 0);
   }
 
-  auth.signInWithEmailAndPassword(email, senha)
-    .then(user => {
-      usuarioAtual = user.user;
-      clienteId = user.user.uid;
-      carregarDados();
-      document.getElementById('login-container').style.display = 'none';
-      document.getElementById('app-container').style.display = 'block';
-    })
-    .catch(error => {
-      if(error.code === 'auth/user-not-found'){
-        mostrarErro('Usuário não encontrado. Cadastre-se primeiro.');
-      } else if(error.code === 'auth/wrong-password'){
-        mostrarErro('Senha incorreta');
-      } else {
-        mostrarErro('Erro: ' + error.message);
-      }
-    });
-}
-
-function abrirCadastro(){
-  const email = prompt('Digite seu email:');
-  if(!email) return;
-  
-  const senha = prompt('Crie uma senha (mínimo 6 caracteres):');
-  if(!senha || senha.length<6){
-    alert('Senha deve ter no mínimo 6 caracteres');
-    return;
+  // ── seleção única dentro de um grupo ──
+  function bindRadio(groupId, onSelect) {
+    var opts = document.querySelectorAll('#' + groupId + ' .opt');
+    for (var i = 0; i < opts.length; i++) {
+      (function(el) {
+        el.addEventListener('click', function() {
+          for (var j = 0; j < opts.length; j++) opts[j].classList.remove('sel');
+          el.classList.add('sel');
+          if (onSelect) onSelect(el.textContent.trim());
+        });
+      })(opts[i]);
+    }
   }
 
-  const nomeEmpresa = prompt('Nome da sua empresa/studio:');
-  if(!nomeEmpresa) return;
-
-  auth.createUserWithEmailAndPassword(email, senha)
-    .then(user => {
-      return db.collection('clientes').doc(user.user.uid).set({
-        email: email,
-        nome: nomeEmpresa,
-        dataCriacao: new Date(),
-        tipo: 'salao' // ou 'varejo', 'industrial' etc.
+  // ── seleção múltipla ──
+  function bindMulti(groupId) {
+    var opts = document.querySelectorAll('#' + groupId + ' .opt');
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].addEventListener('click', function() {
+        this.classList.toggle('sel');
       });
-    })
-    .then(() => {
-      alert('Cadastro realizado! Agora faça login.');
-      document.getElementById('email').value = email;
-      document.getElementById('senha').value = '';
-    })
-    .catch(error => {
-      if(error.code === 'auth/email-already-in-use'){
-        mostrarErro('Este email já está cadastrado');
-      } else {
-        mostrarErro('Erro: ' + error.message);
-      }
-    });
-}
-
-function fazerLogout(){
-  auth.signOut().then(() => {
-    usuarioAtual = null;
-    document.getElementById('login-container').style.display = 'block';
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('email').value = '';
-    document.getElementById('senha').value = '';
-  });
-}
-
-function mostrarErro(msg){
-  const el = document.getElementById('error-msg');
-  el.innerHTML = `<div class="error-msg">${msg}</div>`;
-  setTimeout(() => el.innerHTML = '', 5000);
-}
-
-// ════════ DADOS ════════════════════════════════════════════
-function carregarDados(){
-  if(!clienteId) return;
-
-  // Carregar nome da empresa
-  db.collection('clientes').doc(clienteId).get()
-    .then(doc => {
-      if(doc.exists){
-        document.getElementById('cliente-nome').textContent = doc.data().nome;
-      }
-    });
-
-  // Carregar lançamentos de hoje
-  const hoje = new Date();
-  const dataStr = hoje.toISOString().split('T')[0];
-
-  db.collection('clientes').doc(clienteId).collection('lancamentos')
-    .where('data', '>=', dataStr + 'T00:00:00')
-    .where('data', '<=', dataStr + 'T23:59:59')
-    .orderBy('data', 'desc')
-    .onSnapshot(snapshot => {
-      lancamentosHoje = [];
-      snapshot.forEach(doc => {
-        lancamentosHoje.push({...doc.data(), id: doc.id});
-      });
-      renderLancamentos();
-      atualizarResumo();
-    });
-}
-
-function lancarMovimento(){
-  if(!clienteId) return;
-
-  const tipo = document.getElementById('tipo-lanc').value;
-  const valor = parseFloat(document.getElementById('valor-lanc').value);
-  const categoria = document.getElementById('categoria-lanc').value;
-  const descricao = document.getElementById('desc-lanc').value;
-
-  if(!valor || valor<=0){
-    alert('Digite um valor válido');
-    return;
+    }
   }
 
-  const agora = new Date();
-  const id = agora.getTime() + '-' + Math.random().toString(36).substr(2,9);
-
-  db.collection('clientes').doc(clienteId).collection('lancamentos').doc(id).set({
-    tipo: tipo,
-    valor: valor,
-    categoria: categoria,
-    descricao: descricao,
-    data: agora.toISOString(),
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    document.getElementById('valor-lanc').value = '';
-    document.getElementById('desc-lanc').value = '';
-    document.getElementById('tipo-lanc').value = 'entrada';
-  }).catch(error => alert('Erro ao lançar: ' + error.message));
-}
-
-function renderLancamentos(){
-  const el = document.getElementById('lista-lancamentos');
-  
-  if(lancamentosHoje.length === 0){
-    el.innerHTML = '<div class="empty">Nenhum lançamento hoje</div>';
-    return;
-  }
-
-  el.innerHTML = lancamentosHoje.map(l => {
-    const data = new Date(l.data);
-    const hora = data.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-    const cls = l.tipo === 'entrada' ? 'entrada' : 'saida';
-    const sinal = l.tipo === 'entrada' ? '+' : '-';
-
-    return `
-      <div class="lancamento-item ${cls}">
-        <div class="lancamento-info">
-          <div class="tipo">${l.tipo === 'entrada' ? '↓ ENTRADA' : '↑ SAÍDA'}</div>
-          <div class="desc">${l.descricao || '(sem descrição)'}</div>
-          <div class="cat">${l.categoria}</div>
-        </div>
-        <div class="lancamento-valor">
-          <div class="valor">${sinal} R$ ${l.valor.toFixed(2)}</div>
-          <div class="data">${hora}</div>
-          <button class="btn-del" onclick="deletarLancamento('${l.id}')">Deletar</button>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function deletarLancamento(id){
-  if(!confirm('Deletar este lançamento?')) return;
-  
-  db.collection('clientes').doc(clienteId).collection('lancamentos').doc(id).delete()
-    .catch(error => alert('Erro: ' + error.message));
-}
-
-function atualizarResumo(){
-  const entradas = lancamentosHoje
-    .filter(l => l.tipo === 'entrada')
-    .reduce((a, l) => a + l.valor, 0);
-  
-  const saidas = lancamentosHoje
-    .filter(l => l.tipo === 'saida')
-    .reduce((a, l) => a + l.valor, 0);
-  
-  const saldo = entradas - saidas;
-
-  document.getElementById('total-entrada').textContent = 'R$ ' + fmt(entradas);
-  document.getElementById('total-saida').textContent = 'R$ ' + fmt(saidas);
-  document.getElementById('saldo-final').textContent = 'R$ ' + fmt(saldo);
-
-  // Resumo por categoria
-  const entCat = {}, saiCat = {};
-  lancamentosHoje.forEach(l => {
-    if(l.tipo === 'entrada'){
-      entCat[l.categoria] = (entCat[l.categoria] || 0) + l.valor;
+  // ── filhos ──
+  bindRadio('g-filhos', function(v) {
+    selFilhos = (v === 'Sim') ? 'sim' : 'nao';
+    if (selFilhos === 'sim') {
+      show('sec-filhos');
+      if (filhoN === 0) addFilho();
     } else {
-      saiCat[l.categoria] = (saiCat[l.categoria] || 0) + l.valor;
+      hide('sec-filhos');
+      document.getElementById('filhos-list').innerHTML = '';
+      filhoN = 0;
     }
   });
 
-  document.getElementById('entradas-cat').innerHTML = Object.entries(entCat)
-    .map(([cat, val]) => `<div style="padding:6px 0;border-bottom:1px solid var(--cinza-l);display:flex;justify-content:space-between">
-      <span style="font-size:12px">${cat}</span>
-      <span style="font-weight:700;color:var(--verde)">R$ ${fmt(val)}</span></div>`)
-    .join('') || '<div class="empty">Sem entradas hoje</div>';
+  document.getElementById('btn-add-filho').addEventListener('click', addFilho);
 
-  document.getElementById('saidas-cat').innerHTML = Object.entries(saiCat)
-    .map(([cat, val]) => `<div style="padding:6px 0;border-bottom:1px solid var(--cinza-l);display:flex;justify-content:space-between">
-      <span style="font-size:12px">${cat}</span>
-      <span style="font-weight:700;color:var(--vermelho)">R$ ${fmt(val)}</span></div>`)
-    .join('') || '<div class="empty">Sem saídas hoje</div>';
-}
-
-// ════════ HELPERS ════════════════════════════════════════════
-function switchTab(tab){
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
-}
-
-const fmt = n => Math.round(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-
-// ════════ INIT ════════════════════════════════════════════
-auth.onAuthStateChanged(user => {
-  if(user){
-    usuarioAtual = user;
-    clienteId = user.uid;
-    carregarDados();
-    document.getElementById('login-container').style.display = 'none';
-    document.getElementById('app-container').style.display = 'block';
+  function addFilho() {
+    filhoN++;
+    var id = filhoN;
+    var div = document.createElement('div');
+    div.className = 'filho-row';
+    div.id = 'fl' + id;
+    var inp = document.createElement('input');
+    inp.type = 'number'; inp.min = '0'; inp.max = '18';
+    inp.placeholder = 'Idade do filho ' + id;
+    var btn = document.createElement('button');
+    btn.className = 'btn-rm';
+    btn.textContent = '×';
+    btn.addEventListener('click', function() {
+      var el = document.getElementById('fl' + id);
+      if (el) el.remove();
+    });
+    div.appendChild(inp);
+    div.appendChild(btn);
+    document.getElementById('filhos-list').appendChild(div);
   }
-});
+
+  // ── moradia ──
+  bindRadio('g-moradia', function(v) { selMoradia = v; });
+
+  // ── vagas e horário ──
+  bindMulti('g-vagas');
+  bindMulti('g-horario');
+
+  // ── máscaras ──
+  document.getElementById('cpf').addEventListener('input', function() {
+    var v = this.value.replace(/\D/g,'').slice(0,11);
+    v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+    this.value = v;
+  });
+  document.getElementById('tel').addEventListener('input', function() {
+    var v = this.value.replace(/\D/g,'').slice(0,11);
+    v = v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d{4})$/,'$1-$2');
+    this.value = v;
+  });
+
+  // ── validações ──
+  function ok1() {
+    var nome = document.getElementById('nome');
+    var tel  = document.getElementById('tel');
+    nome.classList.remove('ierr'); tel.classList.remove('ierr');
+    var ok = true;
+    if (!nome.value.trim())                      { nome.classList.add('ierr'); ok = false; }
+    if (tel.value.replace(/\D/g,'').length < 10) { tel.classList.add('ierr');  ok = false; }
+    if (!ok) alert('Preencha Nome e WhatsApp obrigatórios.');
+    return ok;
+  }
+
+  function ok2() {
+    if (!selFilhos || !selMoradia) {
+      alert('Responda: tem filhos? e situação de moradia.');
+      return false;
+    }
+    return true;
+  }
+
+  // ── navegação ──
+  document.getElementById('btn1').addEventListener('click', function() { if (ok1()) goTo(2); });
+  document.getElementById('btn2b').addEventListener('click', function() { goTo(1); });
+  document.getElementById('btn2').addEventListener('click', function() { if (ok2()) goTo(3); });
+  document.getElementById('btn3b').addEventListener('click', function() { goTo(2); });
+  document.getElementById('btn3').addEventListener('click', enviar);
+  document.getElementById('btn-novo').addEventListener('click', function() { location.reload(); });
+
+  // ── envio ──
+  function enviar() {
+    var vagas = [];
+    document.querySelectorAll('#g-vagas .opt.sel').forEach(function(o){ vagas.push(o.textContent.trim()); });
+    if (vagas.length === 0) { alert('Selecione ao menos uma vaga.'); return; }
+
+    var horarios = [];
+    document.querySelectorAll('#g-horario .opt.sel').forEach(function(o){ horarios.push(o.textContent.trim()); });
+
+    var idades = [];
+    document.querySelectorAll('#filhos-list input').forEach(function(i){ if(i.value) idades.push(i.value + ' anos'); });
+
+    var d = {
+      nome:     document.getElementById('nome').value.trim(),
+      cpf:      document.getElementById('cpf').value,
+      nasc:     document.getElementById('nasc').value,
+      email:    document.getElementById('email').value,
+      tel:      document.getElementById('tel').value,
+      cargo:    document.getElementById('cargo').value,
+      loja:     document.getElementById('loja').value,
+      setor:    document.getElementById('setor').value,
+      filhos:   selFilhos === 'sim' ? (idades.join(', ') || 'Sim') : 'Não',
+      moradia:  selMoradia,
+      vagas:    vagas.join(', '),
+      horarios: horarios.join(', ') || '-',
+      obs:      document.getElementById('obs').value,
+      registro: new Date().toLocaleString('pt-BR')
+    };
+
+    var url = 'https://script.google.com/macros/s/AKfycbx20uPl-r0PZ51VsJlO3cLAg6FLpeGkst-uSsmF-Mv8mX4g65skVY_Jfk7yd4LeG_O-/exec';
+    fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(d) }).catch(function(err){ console.warn('Erro:', err); });
+
+    var mapa = [
+      ['Nome', d.nome], ['CPF', d.cpf], ['WhatsApp', d.tel], ['E-mail', d.email],
+      ['Vaga(s)', d.vagas], ['Moradia', d.moradia], ['Filhos', d.filhos],
+      ['Horário', d.horarios], ['Registrado em', d.registro]
+    ];
+    var html = '';
+    mapa.forEach(function(r) { if(r[1]) html += '<div class="rrow"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>'; });
+    document.getElementById('resumo').innerHTML = html;
+
+    hide('p1'); hide('p2'); hide('p3'); hide('steps');
+    show('psuccess');
+    window.scrollTo(0, 0);
+  }
+
+})();
 </script>
 </body>
 </html>
