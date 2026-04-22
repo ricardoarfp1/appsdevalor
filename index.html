@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão Financeira — Studio Casa d'Rara</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;background:#f0f4f8;color:#2C2C2C;font-size:13px}.login-panel{background:#fff;border-radius:8px;padding:24px;border:1px solid #D8DDE5;max-width:400px;margin:40px auto}.login-panel h2{font-size:16px;color:#1B3A5C;margin-bottom:16px;text-align:center}.field{margin-bottom:12px}.field label{display:block;font-size:11px;font-weight:700;color:#6B6B6B;margin-bottom:4px;text-transform:uppercase}.field input{width:100%;padding:8px 10px;border:1px solid #D8DDE5;border-radius:5px;font-size:13px}.field input:focus{outline:none;border-color:#3A9BB5}.btn-login{width:100%;padding:10px;background:#1B3A5C;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px}.btn-login:hover{background:#2B5A8A}.error-msg{background:#FDEDEC;color:#C0392B;padding:8px 12px;border-radius:5px;margin-bottom:12px;font-size:11.5px}.header{background:linear-gradient(135deg,#1B3A5C 0%,#2B4A70 60%,#C4547A 100%);color:#fff;padding:14px 20px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center}.header h1{font-size:15px;font-weight:700}.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;margin-top:4px}.tabs{display:flex;gap:2px;background:#1B3A5C;padding:0 8px}.tab{padding:8px 13px;cursor:pointer;font-size:11.5px;font-weight:700;color:#aac;border-radius:6px 6px 0 0;white-space:nowrap}.tab.active{background:#fff;color:#1B3A5C}.panel{display:none;background:#fff;border-radius:0 8px 8px 8px;padding:16px;border:1px solid #D8DDE5}.panel.active{display:block}.sec{font-size:13px;font-weight:700;color:#1B3A5C;border-bottom:2px solid #3A9BB5;padding-bottom:4px;margin:14px 0 10px}.lancamento-form{background:#F4F6F9;border-radius:8px;padding:12px;margin-bottom:12px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px}.kpi{border-radius:6px;padding:10px 12px;text-align:center;border:1px solid #D8DDE5}.kpi .val{font-size:16px;font-weight:700;line-height:1.2}.kpi .lbl{font-size:10px;color:#6B6B6B;margin-top:2px;text-transform:uppercase}.kpi.vd{background:#EAF4EA;border-color:#a8d5b8}.kpi.vd .val{color:#1A5C38}.kpi.vm{background:#FDEDEC;border-color:#f0a8a8}.kpi.vm .val{color:#C0392B}.kpi.az{background:#EBF3FA;border-color:#a8c8e8}.kpi.az .val{color:#1B3A5C}.app{max-width:1020px;margin:0 auto;padding:10px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD5ojzJug2TlenmqJoV3SZfpLjKt1BoCdc",
+  authDomain: "appsdevalor-financeiro.firebaseapp.com",
+  projectId: "appsdevalor-financeiro",
+  storageBucket: "appsdevalor-financeiro.firebasestorage.app",
+  messagingSenderId: "498844691824",
+  appId: "1:498844691824:web:f03a3386abdfc6d63773b5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let clienteId = null;
+let lancamentosHoje = [];
+
+const app = document.getElementById('app');
+
+function renderLogin() {
+  app.innerHTML = `
+    <div class="login-panel">
+      <h2>Gestão Financeira — Studio Casa d'Rara</h2>
+      <div id="error-msg"></div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="seu@email.com">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="senha" placeholder="****">
+      </div>
+      <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+      <div style="text-align:center;margin-top:12px;font-size:11px;color:#6B6B6B">
+        Primeira vez? <a href="#" onclick="abrirCadastro();return false" style="color:#3A9BB5;text-decoration:none">Cadastre-se aqui</a>
+      </div>
+    </div>`;
+}
+
+function renderApp() {
+  app.innerHTML = `
+    <div class="app">
+      <div class="header">
+        <div>
+          <h1>✂️ Gestão Financeira — Studio Casa d'Rara</h1>
+          <div style="font-size:11px;color:#dde;margin-top:2px">Lançamento diário + DRE + Diagnóstico + Plano de Ação</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:#fff;font-size:12px" id="cliente-nome">Studio Casa d'Rara</div>
+          <button class="logout-btn" onclick="fazerLogout()">Sair</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('caixa')">💰 Caixa Diário</div>
+        <div class="tab" onclick="switchTab('dre')">📊 DRE Gerencial</div>
+        <div class="tab" onclick="switchTab('diagnostico')">🔍 Diagnóstico</div>
+      </div>
+      <div id="tab-caixa" class="panel active">
+        <div class="sec">Novo Lançamento</div>
+        <div class="lancamento-form">
+          <div class="g2">
+            <div class="field">
+              <label>Tipo</label>
+              <select id="tipo-lanc">
+                <option value="entrada">📍 Entrada</option>
+                <option value="saida">📍 Saída</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Valor (R$)</label>
+              <input type="number" id="valor-lanc" placeholder="0.00" step="0.01">
+            </div>
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <select id="categoria-lanc">
+              <option value="faturamento">Faturamento / Vendas</option>
+              <option value="insumos">Insumos / Produtos</option>
+              <option value="comissao">Comissões / Folha</option>
+              <option value="aluguel">Aluguel</option>
+              <option value="energia">Energia / Água</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <button class="btn-login" onclick="lancarMovimento()">✓ Lançar</button>
+        </div>
+        <div class="sec">Resumo Hoje</div>
+        <div class="kgrid">
+          <div class="kpi vd"><div class="val" id="ent-hoje">R$ 0</div><div class="lbl">Entradas</div></div>
+          <div class="kpi vm"><div class="val" id="sai-hoje">R$ 0</div><div class="lbl">Saídas</div></div>
+          <div class="kpi az"><div class="val" id="sal-hoje">R$ 0</div><div class="lbl">Saldo</div></div>
+        </div>
+      </div>
+      <div id="tab-dre" class="panel">
+        <div class="sec">DRE Gerencial — Últimos 30 Dias</div>
+        <div id="dre-c">Carregando...</div>
+      </div>
+      <div id="tab-diagnostico" class="panel">
+        <div class="sec">Diagnóstico Financeiro</div>
+        <div id="diag-c">Carregando...</div>
+      </div>
+    </div>`;
+  carregarDados();
+}
+
+function fazerLogin() {
+  const email = document.getElementById('email').value;
+  const senha = document.getElementById('senha').value;
+  if(!email || !senha) { alert('Preencha email e senha'); return; }
+  auth.signInWithEmailAndPassword(email, senha).then(user => {
+    clienteId = user.user.uid;
+    renderApp();
+  }).catch(error => {
+    document.getElementById('error-msg').innerHTML = `<div class="error-msg">Erro: ${error.message}</div>`;
+  });
+}
+
+function abrirCadastro() {
+  const email = prompt('Email:');
+  if(!email) return;
+  const senha = prompt('Senha (min 6 caracteres):');
+  if(!senha || senha.length<6) { alert('Senha inválida'); return; }
+  const nome = prompt('Nome da empresa:');
+  if(!nome) return;
+  auth.createUserWithEmailAndPassword(email, senha).then(user => {
+    db.collection('clientes').doc(user.user.uid).set({email, nome, dataCriacao: new Date()});
+    alert('Cadastro realizado! Faça login.');
+    document.getElementById('email').value = email;
+  }).catch(error => alert('Erro: ' + error.message));
+}
+
+function fazerLogout() {
+  auth.signOut().then(() => { renderLogin(); });
+}
+
+function carregarDados() {
+  db.collection('clientes').doc(clienteId).get().then(doc => {
+    if(doc.exists) document.getElementById('cliente-nome').textContent = doc.data().nome;
+  });
+  
+  const hoje = new Date().toISOString().split('T')[0];
+  db.collection('clientes').doc(clienteId).collection('lancamentos')
+    .where('data', '>=', hoje + 'T00:00:00')
+    .orderBy('data', 'desc').onSnapshot(snapshot => {
+      lancamentosHoje = [];
+      snapshot.forEach(doc => lancamentosHoje.push({...doc.data(), id: doc.id}));
+      atualizarCaixa();
+    });
+}
+
+function lancarMovimento() {
+  const tipo = document.getElementById('tipo-lanc').value;
+  const valor = parseFloat(document.getElementById('valor-lanc').value);
+  const categoria = document.getElementById('categoria-lanc').value;
+  if(!valor || valor<=0) { alert('Valor inválido'); return; }
+  const id = Date.now() + '-' + Math.random().toString(36).substr(2,9);
+  db.collection('clientes').doc(clienteId).collection('lancamentos').doc(id).set({
+    tipo, valor, categoria, data: new Date().toISOString(), timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    document.getElementById('valor-lanc').value = '';
+  }).catch(error => alert('Erro: ' + error.message));
+}
+
+function atualizarCaixa() {
+  const ent = lancamentosHoje.filter(l => l.tipo === 'entrada').reduce((a, l) => a + l.valor, 0);
+  const sai = lancamentosHoje.filter(l => l.tipo === 'saida').reduce((a, l) => a + l.valor, 0);
+  document.getElementById('ent-hoje').textContent = 'R$ ' + ent.toFixed(2);
+  document.getElementById('sai-hoje').textContent = 'R$ ' + sai.toFixed(2);
+  document.getElementById('sal-hoje').textContent = 'R$ ' + (ent - sai).toFixed(2);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+auth.onAuthStateChanged(user => {
+  if(user) { clienteId = user.uid; renderApp(); }
+  else { renderLogin(); }
+});
+</script>
+</body>
+</html>
