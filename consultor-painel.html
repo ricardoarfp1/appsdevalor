@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Consultor — Valor Gestão</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+:root{
+  --azul:#1B3A5C;--ciano:#3A9BB5;--azul-l:#EBF3FA;--cinza-f:#F4F6F9;
+  --cinza-t:#2C2C2C;--cinza-m:#6B6B6B;--cinza-l:#D8DDE5;
+  --verde:#1A5C38;--verde-l:#EAF4EA;--laranja:#C05000;--laranja-l:#FFF0E8;
+  --vermelho:#C0392B;--vermelho-l:#FDEDEC;--dourado:#B8922A;
+}
+body{background:#f0f4f8;color:var(--cinza-t);font-size:13px;min-height:100vh}
+.app{max-width:1200px;margin:0 auto;padding:12px}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,var(--azul),#2B5A8A);color:#fff;padding:14px 20px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.header h1{font-size:15px;font-weight:700}
+.header .user{font-size:11px;color:#aac;text-align:right}
+.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;margin-top:4px}
+.logout-btn:hover{background:rgba(255,255,255,.25)}
+
+/* LOGIN */
+.login-panel{background:#fff;border-radius:8px;padding:24px;border:1px solid var(--cinza-l);max-width:400px;margin:60px auto}
+.login-panel h2{font-size:16px;color:var(--azul);margin-bottom:16px;text-align:center}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--cinza-m);margin-bottom:4px;text-transform:uppercase}
+.field input{width:100%;padding:8px 10px;border:1px solid var(--cinza-l);border-radius:5px;font-size:13px}
+.field input:focus{outline:none;border-color:var(--ciano)}
+.btn-login{width:100%;padding:10px;background:var(--azul);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-login:hover{background:#2B5A8A}
+.error-msg{background:var(--vermelho-l);color:var(--vermelho);padding:8px 12px;border-radius:5px;margin-bottom:12px;font-size:11px}
+.info-msg{background:var(--azul-l);color:var(--azul);padding:8px 12px;border-radius:5px;margin-bottom:12px;font-size:11px}
+
+/* GRID */
+.clientes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
+
+/* CLIENTE CARD */
+.cliente-card{background:#fff;border-radius:8px;border:1px solid var(--cinza-l);overflow:hidden;transition:.2s}
+.cliente-card:hover{border-color:var(--ciano);transform:translateY(-1px);box-shadow:0 2px 12px rgba(27,58,92,.1)}
+.cliente-header{background:var(--azul);color:#fff;padding:12px;display:flex;justify-content:space-between;align-items:flex-start}
+.cliente-nome{font-size:13px;font-weight:700}
+.cliente-status{font-size:10px;background:rgba(255,255,255,.2);padding:2px 6px;border-radius:4px}
+.cliente-body{padding:12px}
+.cliente-kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.mini-kpi{background:var(--cinza-f);border-radius:5px;padding:7px 8px;text-align:center}
+.mini-kpi .val{font-size:13px;font-weight:700;color:var(--azul);line-height:1.2}
+.mini-kpi .lbl{font-size:9px;color:var(--cinza-m);margin-top:1px;text-transform:uppercase}
+.cliente-footer{padding:10px 12px;border-top:1px solid var(--cinza-l);display:flex;gap:6px;font-size:10px;color:var(--cinza-m)}
+
+/* RESUMO EXECUTIVO */
+.resumo-exec{background:#fff;border-radius:8px;border:1px solid var(--cinza-l);padding:14px;margin-bottom:20px}
+.resumo-title{font-size:12px;font-weight:700;color:var(--azul);border-bottom:2px solid var(--ciano);padding-bottom:6px;margin-bottom:10px}
+.resumo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.resumo-kpi{background:var(--cinza-f);border-radius:6px;padding:10px;text-align:center}
+.resumo-kpi .val{font-size:16px;font-weight:700;color:var(--azul)}
+.resumo-kpi .lbl{font-size:10px;color:var(--cinza-m);margin-top:2px;text-transform:uppercase}
+
+/* TABELA */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--azul);color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:700}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--cinza-l)}
+.tbl tr:hover{background:var(--cinza-f)}
+.tbl .pos{color:var(--verde);font-weight:600}
+.tbl .neg{color:var(--vermelho);font-weight:600}
+
+/* ABAS */
+.tabs{display:flex;gap:2px;margin-bottom:14px}
+.tab{padding:8px 12px;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--cinza-m);background:#fff;border:1px solid var(--cinza-l);border-radius:6px;transition:.15s}
+.tab.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+
+.panel{display:none}
+.panel.active{display:block}
+
+.loading{text-align:center;padding:30px;color:var(--cinza-m)}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--cinza-l);border-top-color:var(--ciano);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- LOGIN -->
+<div id="login-container" class="login-panel">
+  <h2>Painel do Consultor</h2>
+  <div class="info-msg">⚠️ Acesso restrito a consultores Valor Gestão</div>
+  <div id="error-msg"></div>
+  <div class="field">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="seu@valorgestao.com">
+  </div>
+  <div class="field">
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="****">
+  </div>
+  <button class="btn-login" onclick="fazerLogin()">Acessar Painel</button>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app-container" style="display:none">
+
+<div class="header">
+  <h1>📊 Painel Consultor — Valor Gestão</h1>
+  <div class="user">
+    <div id="consultor-nome">Ricardo Pinto</div>
+    <button class="logout-btn" onclick="fazerLogout()">Sair</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">Visão Geral</div>
+  <div class="tab" onclick="switchTab('clientes')">Clientes Detalhados</div>
+  <div class="tab" onclick="switchTab('relatorio')">Relatório Financeiro</div>
+</div>
+
+<!-- OVERVIEW -->
+<div id="tab-overview" class="panel active">
+  <div class="resumo-exec">
+    <div class="resumo-title">Consolidado — Todos os Clientes</div>
+    <div class="resumo-grid">
+      <div class="resumo-kpi">
+        <div class="val" id="total-clientes">0</div>
+        <div class="lbl">Clientes Ativos</div>
+      </div>
+      <div class="resumo-kpi">
+        <div class="val" id="total-fat">R$ 0</div>
+        <div class="lbl">Faturamento Período</div>
+      </div>
+      <div class="resumo-kpi">
+        <div class="val" id="total-saldo">R$ 0</div>
+        <div class="lbl">Saldo Geral</div>
+      </div>
+      <div class="resumo-kpi">
+        <div class="val" id="total-lancamentos">0</div>
+        <div class="lbl">Lançamentos Hoje</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="resumo-exec">
+    <div class="resumo-title">Clientes Por Status</div>
+    <div id="status-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px"></div>
+  </div>
+
+  <div class="clientes-grid" id="clientes-cards"></div>
+</div>
+
+<!-- CLIENTES DETALHADOS -->
+<div id="tab-clientes" class="panel">
+  <div class="resumo-exec">
+    <div class="resumo-title">Últimos Lançamentos de Todos os Clientes</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Categoria</th>
+          <th>Descrição</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody id="lancamentos-tabela">
+        <tr><td colspan="6" style="text-align:center;padding:20px">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- RELATÓRIO -->
+<div id="tab-relatorio" class="panel">
+  <div class="resumo-exec">
+    <div class="resumo-title">Análise Financeira Consolidada</div>
+    <div style="padding:10px;background:var(--cinza-f);border-radius:5px;margin-bottom:10px;font-size:12px;line-height:1.5">
+      <strong>Período selecionado:</strong> Últimos 30 dias<br>
+      <strong>Dados em tempo real</strong> — atualizado a cada novo lançamento
+    </div>
+    
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Entradas</th>
+          <th>Saídas</th>
+          <th>Saldo</th>
+          <th>Principal Entrada</th>
+          <th>Principal Saída</th>
+        </tr>
+      </thead>
+      <tbody id="relatorio-tabela">
+        <tr><td colspan="6" style="text-align:center;padding:20px">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /app-container -->
+
+</div><!-- /app -->
+
+<script>
+// ════════ FIREBASE CONFIG ════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyD...",
+  authDomain: "appsdevalor-financeiro.firebaseapp.com",
+  projectId: "appsdevalor-financeiro",
+  storageBucket: "appsdevalor-financeiro.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef..."
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let consultorEmail = "ricardo@valorgestao.com";
+let usuarioAtual = null;
+let todosOsDados = [];
+
+// ════════ AUTH ════════════════════════════════════════════
+function fazerLogin(){
+  const email = document.getElementById('email').value;
+  const senha = document.getElementById('senha').value;
+  
+  if(!email || !senha){
+    mostrarErro('Preencha email e senha');
+    return;
+  }
+
+  // Validar se é um email de consultor autorizado
+  if(!email.includes('@valorgestao.com') && email !== consultorEmail){
+    mostrarErro('Acesso restrito a consultores Valor Gestão');
+    return;
+  }
+
+  auth.signInWithEmailAndPassword(email, senha)
+    .then(user => {
+      usuarioAtual = user.user;
+      carregarTodosDados();
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('app-container').style.display = 'block';
+    })
+    .catch(error => {
+      mostrarErro('Erro de autenticação: ' + error.message);
+    });
+}
+
+function fazerLogout(){
+  auth.signOut().then(() => {
+    usuarioAtual = null;
+    document.getElementById('login-container').style.display = 'block';
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('email').value = '';
+    document.getElementById('senha').value = '';
+  });
+}
+
+function mostrarErro(msg){
+  const el = document.getElementById('error-msg');
+  el.innerHTML = `<div class="error-msg">${msg}</div>`;
+  setTimeout(() => el.innerHTML = '', 5000);
+}
+
+// ════════ CARREGAR DADOS ════════════════════════════════════════════
+function carregarTodosDados(){
+  todosOsDados = [];
+  
+  db.collection('clientes').onSnapshot(clientesSnap => {
+    let promises = [];
+
+    clientesSnap.forEach(clienteDoc => {
+      const clienteId = clienteDoc.id;
+      const clienteInfo = clienteDoc.data();
+
+      promises.push(
+        db.collection('clientes').doc(clienteId).collection('lancamentos')
+          .orderBy('data', 'desc')
+          .limit(1000)
+          .get()
+          .then(lancSnap => {
+            const lancamentos = [];
+            lancSnap.forEach(lancDoc => {
+              lancamentos.push({...lancDoc.data(), id: lancDoc.id});
+            });
+            return {clienteId, clienteInfo, lancamentos};
+          })
+      );
+    });
+
+    Promise.all(promises).then(resultados => {
+      todosOsDados = resultados;
+      renderizarOverview();
+      renderizarClientes();
+      renderizarLancamentos();
+      renderizarRelatorio();
+    });
+  });
+}
+
+// ════════ RENDERIZAR ════════════════════════════════════════════
+function renderizarOverview(){
+  const totalClientes = todosOsDados.length;
+  const hoje = new Date().toISOString().split('T')[0];
+  
+  let totalFat = 0, totalSaldo = 0, lancamentosHoje = 0;
+  const statusMap = {'ativo': 0, 'atencao': 0, 'critico': 0};
+
+  todosOsDados.forEach(({lancamentos}) => {
+    lancamentos.forEach(l => {
+      const valor = l.tipo === 'entrada' ? l.valor : -l.valor;
+      totalFat += l.tipo === 'entrada' ? l.valor : 0;
+      totalSaldo += valor;
+      if(l.data.split('T')[0] === hoje) lancamentosHoje++;
+    });
+  });
+
+  document.getElementById('total-clientes').textContent = totalClientes;
+  document.getElementById('total-fat').textContent = 'R$ ' + fmt(totalFat);
+  document.getElementById('total-saldo').textContent = 'R$ ' + fmt(totalSaldo);
+  document.getElementById('total-lancamentos').textContent = lancamentosHoje;
+}
+
+function renderizarClientes(){
+  const html = todosOsDados.map(({clienteId, clienteInfo, lancamentos}) => {
+    let entradas = 0, saidas = 0;
+    lancamentos.forEach(l => {
+      if(l.tipo === 'entrada') entradas += l.valor;
+      else saidas += l.valor;
+    });
+    const saldo = entradas - saidas;
+
+    return `
+      <div class="cliente-card">
+        <div class="cliente-header">
+          <div>
+            <div class="cliente-nome">${clienteInfo.nome}</div>
+            <div class="cliente-status">●${clienteInfo.tipo}</div>
+          </div>
+        </div>
+        <div class="cliente-body">
+          <div class="cliente-kpi">
+            <div class="mini-kpi">
+              <div class="val" style="color:var(--verde)">R$ ${fmt(entradas)}</div>
+              <div class="lbl">Entradas</div>
+            </div>
+            <div class="mini-kpi">
+              <div class="val" style="color:var(--vermelho)">R$ ${fmt(saidas)}</div>
+              <div class="lbl">Saídas</div>
+            </div>
+          </div>
+          <div style="background:var(--cinza-f);border-radius:5px;padding:8px;text-align:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:${saldo>=0?'var(--verde)':'var(--vermelho)'}">R$ ${fmt(saldo)}</div>
+            <div style="font-size:10px;color:var(--cinza-m)">Saldo</div>
+          </div>
+        </div>
+        <div class="cliente-footer">
+          <span>📊 ${lancamentos.length} lançamentos</span>
+          <span>👤 ${clienteInfo.email}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('clientes-cards').innerHTML = html || '<p class="loading">Nenhum cliente cadastrado ainda</p>';
+}
+
+function renderizarLancamentos(){
+  const todos = [];
+  todosOsDados.forEach(({clienteInfo, lancamentos}) => {
+    lancamentos.forEach(l => {
+      todos.push({...l, clienteNome: clienteInfo.nome});
+    });
+  });
+
+  todos.sort((a, b) => new Date(b.data) - new Date(a.data));
+  const ultimos50 = todos.slice(0, 50);
+
+  const html = ultimos50.map(l => {
+    const data = new Date(l.data);
+    const dataStr = data.toLocaleDateString('pt-BR');
+    const cls = l.tipo === 'entrada' ? 'pos' : 'neg';
+    const sinal = l.tipo === 'entrada' ? '+' : '-';
+
+    return `<tr>
+      <td>${dataStr}</td>
+      <td>${l.clienteNome}</td>
+      <td>${l.tipo === 'entrada' ? '↓ ENTRADA' : '↑ SAÍDA'}</td>
+      <td>${l.categoria}</td>
+      <td>${l.descricao || '-'}</td>
+      <td class="${cls}">${sinal} R$ ${fmt(l.valor)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('lancamentos-tabela').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:20px">Sem lançamentos</td></tr>';
+}
+
+function renderizarRelatorio(){
+  const html = todosOsDados.map(({clienteInfo, lancamentos}) => {
+    let entradas = 0, saidas = 0;
+    const catMap = {};
+    
+    lancamentos.forEach(l => {
+      if(l.tipo === 'entrada') entradas += l.valor;
+      else saidas += l.valor;
+      
+      if(!catMap[l.categoria]) catMap[l.categoria] = {entrada: 0, saida: 0};
+      if(l.tipo === 'entrada') catMap[l.categoria].entrada += l.valor;
+      else catMap[l.categoria].saida += l.valor;
+    });
+
+    const entPrincipal = Object.entries(catMap)
+      .sort((a, b) => b[1].entrada - a[1].entrada)[0];
+    const saiPrincipal = Object.entries(catMap)
+      .sort((a, b) => b[1].saida - a[1].saida)[0];
+
+    const saldo = entradas - saidas;
+
+    return `<tr>
+      <td><strong>${clienteInfo.nome}</strong></td>
+      <td class="pos">R$ ${fmt(entradas)}</td>
+      <td class="neg">R$ ${fmt(saidas)}</td>
+      <td style="font-weight:700;color:${saldo>=0?'var(--verde)':'var(--vermelho)'}">R$ ${fmt(saldo)}</td>
+      <td>${entPrincipal ? entPrincipal[0] + ' (R$ ' + fmt(entPrincipal[1].entrada) + ')' : '-'}</td>
+      <td>${saiPrincipal ? saiPrincipal[0] + ' (R$ ' + fmt(saiPrincipal[1].saida) + ')' : '-'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('relatorio-tabela').innerHTML = html || '<tr><td colspan="6">Sem dados</td></tr>';
+}
+
+// ════════ HELPERS ════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const fmt = n => Math.round(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+// ════════ INIT ════════════════════════════════════════════
+auth.onAuthStateChanged(user => {
+  if(user && (user.email.includes('@valorgestao.com') || user.email === consultorEmail)){
+    usuarioAtual = user;
+    document.getElementById('consultor-nome').textContent = user.email;
+    carregarTodosDados();
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
