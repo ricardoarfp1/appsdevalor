@@ -643,19 +643,47 @@ input,select,textarea{font-family:inherit;font-size:13px;outline:none;transition
           <label>Data de Competência *</label>
           <input type="date" id="lc-data">
         </div>
-        <div class="field">
+        <div class="field form-full">
           <label>Categoria *</label>
-          <select id="lc-cat">
-            <option value="aluguel">Aluguel</option>
-            <option value="folha">Folha / Pró-labore</option>
-            <option value="energia">Energia</option>
-            <option value="insumos">Insumos / Produtos</option>
-            <option value="sistema">Sistema / Software</option>
-            <option value="marketing">Marketing</option>
-            <option value="gorjeta">Gorjeta</option>
-            <option value="produto_avulso">Venda Produto Avulso</option>
-            <option value="outro">Outro</option>
+          <select id="lc-cat" onchange="lcCatChange()">
+            <optgroup label="── CUSTOS VARIÁVEIS">
+              <option value="insumos">Insumos e Produtos</option>
+              <option value="comissoes">Comissões Profissionais</option>
+              <option value="taxas_cartao">Taxas de Cartão</option>
+              <option value="terceirizados">Serviços Terceirizados</option>
+            </optgroup>
+            <optgroup label="── IMPOSTOS">
+              <option value="simples_iss">Simples Nacional / ISS</option>
+              <option value="outros_impostos">Outros Impostos</option>
+            </optgroup>
+            <optgroup label="── DESPESAS FIXAS">
+              <option value="aluguel">Aluguel</option>
+              <option value="energia">Energia</option>
+              <option value="agua">Água</option>
+              <option value="internet_sistema">Internet / Sistema</option>
+              <option value="contador">Contador</option>
+              <option value="limpeza">Limpeza</option>
+              <option value="marketing">Marketing</option>
+              <option value="salarios_prolabore">Salários / Pró-labore</option>
+            </optgroup>
+            <optgroup label="── FINANCEIRO">
+              <option value="juros_banco">Juros / Tarifas Bancárias</option>
+            </optgroup>
+            <optgroup label="── RECEITA EXTRAORDINÁRIA">
+              <option value="gorjeta">Gorjeta</option>
+              <option value="produto_avulso">Venda de Produto Avulso</option>
+              <option value="sinal_retido">Sinal Retido</option>
+            </optgroup>
+            <optgroup label="── OUTROS">
+              <option value="investimento">Investimentos</option>
+              <option value="emprestimo">Empréstimos</option>
+              <option value="ajuste">Ajustes</option>
+              <option value="outro">Outro</option>
+            </optgroup>
           </select>
+        </div>
+        <div class="field form-full" id="lc-ajuda-wrap" style="display:none">
+          <div id="lc-ajuda" style="background:#EBF3FA;border-left:3px solid #3A9BB5;border-radius:5px;padding:8px 12px;font-size:11.5px;color:#1B3A5C;line-height:1.6"></div>
         </div>
         <div class="field form-full">
           <label>Descrição *</label>
@@ -1266,6 +1294,43 @@ async function _salvarWalkin(profId_el,servId_el,valor_el,desc_el,pgto_el,cli_el
 function lcTipoChange(){
   const tipo = $('lc-tipo').value;
   $('lc-just-wrap').style.display = tipo==='extraordinario'||tipo==='reembolso' ? 'block' : 'none';
+}
+
+const AJUDA_CAT = {
+  insumos:          'Produtos consumidos nos atendimentos: tintura, esmalte, cremes, queratina etc. Lançar quando comprar ou consumir estoque.',
+  comissoes:        'Pagamentos variáveis aos profissionais conforme produção. Lançar no fechamento quinzenal ou mensal.',
+  taxas_cartao:     'Taxas cobradas pela maquininha ou gateway de pagamento. Geralmente aparece no extrato bancário.',
+  terceirizados:    'Serviços contratados externamente: lavanderia, manutenção, segurança etc.',
+  simples_iss:      'Guia do Simples Nacional ou ISS municipal. Lançar na data de vencimento pelo valor da guia.',
+  outros_impostos:  'FGTS, INSS, IRRF ou outros tributos não cobertos pelo Simples.',
+  aluguel:          'Despesa fixa mensal do espaço. Não lançar duplicado no mesmo mês. Usar data de competência do mês, mesmo que pague adiantado.',
+  energia:          'Conta de luz do salão. Lançar quando chegar a fatura, com data de competência do mês de referência.',
+  agua:             'Conta de água. Mesmo critério da energia.',
+  internet_sistema: 'Plano de internet, sistema de agendamento (Belasis), softwares mensais.',
+  contador:         'Honorários mensais do escritório contábil.',
+  limpeza:          'Produtos de limpeza ou serviço de limpeza terceirizado.',
+  marketing:        'Instagram Ads, Google Ads, material gráfico, fotografia, influenciadores.',
+  salarios_prolabore: 'Folha fixa CLT ou retirada de pró-labore do sócio. Separar de comissões variáveis.',
+  juros_banco:      'Tarifas de conta corrente, juros de empréstimo, IOF. Ver extrato bancário.',
+  gorjeta:          'Valor extra dado pelo cliente ao profissional ou ao salão. Receita extraordinária — não é serviço.',
+  produto_avulso:   'Venda de produto sem atendimento: shampoo, condicionador, esmalte para levar para casa.',
+  sinal_retido:     'Sinal retido por cancelamento sem aviso prévio. Justificativa obrigatória.',
+  investimento:     'Compra de equipamento, reforma, mobiliário. Não é despesa operacional recorrente.',
+  emprestimo:       'Entrada ou parcela de empréstimo. Atenção: não confundir com despesa operacional.',
+  ajuste:           'Correção de lançamento anterior. Justificativa obrigatória e detalhada.',
+  outro:            'Use apenas quando nenhuma categoria acima se aplica. Descreva bem no campo de descrição.',
+};
+
+function lcCatChange(){
+  const cat   = $('lc-cat').value;
+  const wrap  = $('lc-ajuda-wrap');
+  const ajuda = $('lc-ajuda');
+  if(AJUDA_CAT[cat]){
+    ajuda.textContent = '💡 ' + AJUDA_CAT[cat];
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
 }
 
 async function salvarLancamento(){
